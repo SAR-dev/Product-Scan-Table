@@ -100,11 +100,10 @@ export default function PackingTable({
     if (active) {
       if (Number(input) > max) {
         playError.audio.play();
-        return;
+      } else {
+        setActivePacked(Number(input));
+        playScanned.audio.play();
       }
-      setActivePacked(Number(input));
-      // setActive({ ...active, packed: Number(input) });
-      playScanned.audio.play();
     }
   };
 
@@ -166,8 +165,8 @@ export default function PackingTable({
   useEffect(() => {
     if (active && active.amount === activePacked) {
       const t = values.map(e => {
-        if(e.code === active.code){
-          return {...e, packed: activePacked}
+        if (e.code === active.code) {
+          return { ...e, packed: activePacked }
         } else {
           return e;
         }
@@ -206,7 +205,7 @@ export default function PackingTable({
                     className="w-12 form-input form-input-sm"
                     type="number"
                     min={1}
-                    max={active.amount}
+                    // max={active.amount}
                     value={activePacked.toString()}
                     onChange={(e) =>
                       handlePackChange(e.target.value, active.amount)
