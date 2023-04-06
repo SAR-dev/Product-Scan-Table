@@ -42,14 +42,33 @@ const sortValues = (values: DataType[]) => {
 };
 
 const usePlayScanned = () => {
-  const audio = useAudio(scannedSFX, { volume: 0.8, playbackRate: 1 });
+  const audio = useAudio(scannedSFX, { volume: 1, playbackRate: 1 });
   return { audio };
 };
 
 const usePlayError = () => {
-  const audio = useAudio(errorSFX, { volume: 0.8, playbackRate: 1 });
+  const audio = useAudio(errorSFX, { volume: 1, playbackRate: 1 });
   return { audio };
 };
+
+const getInitialData = ({
+  cacheKey,
+  initialData
+}: {
+  cacheKey: string,
+  initialData: DataType[]
+}) => {
+  const cachedData = localStorage.getItem(cacheKey);
+  if (!cachedData) {
+    return initialData;;
+  }
+  const localData: DataType[] = JSON.parse(cachedData);
+  const newData = initialData.map(item => {
+    const updatedItem = localData.find(localItem => localItem.code === item.code);
+    return updatedItem ? { ...item, packed: updatedItem.packed } : item;
+  });
+  return newData;
+}
 
 export default function PackingTable({
   initialData,
@@ -59,6 +78,7 @@ export default function PackingTable({
   const [values, setValues] = useState<DataType[]>([]);
   const [active, setActive] = useState<DataType | undefined>(undefined);
   const [barcode, setbarcode] = useState('');
+  const [activePacked, setActivePacked] = useState(1)
 
   const playScanned = usePlayScanned();
   const playError = usePlayError();
@@ -69,28 +89,9 @@ export default function PackingTable({
 
   useEffect(() => {
     if (!initialized) {
-      const localData: DataType[] | null = JSON.parse(
-        localStorage.getItem(cacheKey)!
-      );
-      if (!localData) {
-        setValues([...initialData]);
-        setInitialized(true);
-        return;
-      }
-      const newData = initialData.map((item) => {
-        const updatedItem = localData.find(
-          (localItem) => localItem.code === item.code
-        );
-        if (updatedItem) {
-          return {
-            ...item,
-            packed: updatedItem.packed,
-          };
-        }
-        return item;
-      });
-
-      setValues([...newData]);
+      setValues([...getInitialData({
+        cacheKey, initialData
+      })])
       setInitialized(true);
     }
   }, [initialData]);
@@ -101,7 +102,8 @@ export default function PackingTable({
         playError.audio.play();
         return;
       }
-      setActive({ ...active, packed: Number(input) });
+      setActivePacked(Number(input));
+      // setActive({ ...active, packed: Number(input) });
       playScanned.audio.play();
     }
   };
@@ -161,6 +163,20 @@ export default function PackingTable({
     }
   }, [values, active]);
 
+  useEffect(() => {
+    if (active && active.amount === activePacked) {
+      const t = values.map(e => {
+        if(e.code === active.code){
+          return {...e, packed: activePacked}
+        } else {
+          return e;
+        }
+      })
+      setValues([...t])
+    }
+  }, [activePacked, active])
+
+
   return (
     <div className="w-full">
       <table className="border-collapse w-full mb-5">
@@ -168,17 +184,16 @@ export default function PackingTable({
           <tr className="px-4 py-2 text-sm font-medium text-gray-900 border border-gray-200 mb-5">
             {Object.keys(schema).map((e, i) => (
               <td
-                className={`${
-                  schema[e as keyof typeof schema].classes
-                } space-y-3`}
+                className={`${schema[e as keyof typeof schema].classes
+                  } space-y-3`}
                 key={e}
               >
                 {e === 'barcode' && (
                   <input
-                    className="h-8 w-36 p-2 border border-gray-200 rounded"
+                    className="w-36 form-input form-input-sm"
                     type="text"
                     value={barcode}
-                    onChange={() => {}}
+                    onChange={() => { }}
                     onPaste={(e) => setbarcode(e.clipboardData.getData('text'))}
                     placeholder="Paste barcode"
                   />
@@ -188,11 +203,11 @@ export default function PackingTable({
                 {active && e === 'picked' && <p>{active.picked}</p>}
                 {active && e === 'packed' && (
                   <input
-                    className="h-8 w-12 p-2 border border-gray-200 rounded"
+                    className="w-12 form-input form-input-sm"
                     type="number"
                     min={1}
                     max={active.amount}
-                    value={active.packed.toString()}
+                    value={activePacked.toString()}
                     onChange={(e) =>
                       handlePackChange(e.target.value, active.amount)
                     }
@@ -237,7 +252,7 @@ export default function PackingTable({
                     {el === 'barcode' && (
                       <>
                         {active?.code === item.code &&
-                        item.amount !== item.packed ? (
+                          item.amount !== item.packed ? (
                           <Loader className="animate-spin" size={15} />
                         ) : (
                           <Check

@@ -1,5 +1,5 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "product-scan-table",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,7 @@
   "dependencies": {
     "classnames": "2.3.2",
     "framer-motion": "10.0.0",
+    "kutty": "^0.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tabler-icons-react": "1.56.0"
